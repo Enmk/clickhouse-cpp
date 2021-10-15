@@ -21,6 +21,10 @@
 #include <ostream>
 #include <string>
 
+#if WITH_OPENSSL
+typedef struct ssl_ctx_st SSL_CTX;
+#endif
+
 namespace clickhouse {
 
 struct ServerInfo {
@@ -40,8 +44,8 @@ enum class CompressionMethod {
 };
 
 struct ClientOptions {
-#define DECLARE_FIELD(name, type, setter, default) \
-    type name = default; \
+#define DECLARE_FIELD(name, type, setter, default_value) \
+    type name = default_value; \
     inline ClientOptions& setter(const type& value) { \
         name = value; \
         return *this; \
@@ -91,6 +95,32 @@ struct ClientOptions {
     */
     DECLARE_FIELD(backward_compatibility_lowcardinality_as_wrapped_column, bool, SetBakcwardCompatibilityFeatureLowCardinalityAsWrappedColumn, true);
 
+#if WITH_OPENSSL
+    struct SSLOptions {
+        /// If set to true, client will initiate secure connection to the server using OpenSSL.
+        bool secure_connection = false;
+
+        /** Means to validate server-supplied certificate agains trust certificate store.
+         *  If no CA are loaded the server's identity can't be validated and client would err.
+         *  Another option is to-preconfigure SSL_CTX and pass it as `ssl_context`.
+        */
+        /// path to the directory with .pem files used to validate server certificate, may be empty.
+        std::string path_to_cert_directory;
+        /// path to the .pem files to verify server certificate, may be empty.
+        std::vector<std::string> path_to_cert_files;
+        bool use_default_CA_locations = true;
+
+        /** Pre-configured SSL-context to use for making SSL-connection.
+         *  If NOT null client DONES NOT take ownership of context and it must be valid for client lifetime.
+         *  If null client initlaizes OpenSSL and creates his own context, initializing it accorind with
+         * other provided options, like path_to_cert_file, path_to_cert_directory, etc.
+         */
+        SSL_CTX * ssl_context = nullptr;
+        // TODO: min TLS version
+    };
+    DECLARE_FIELD(ssl_options, SSLOptions, SetSSLOptions, {});
+#endif
+
 #undef DECLARE_FIELD
 };
 
@@ -130,7 +160,7 @@ public:
     const ServerInfo& GetServerInfo() const;
 
 private:
-    ClientOptions options_;
+    const ClientOptions options_;
 
     class Impl;
     std::unique_ptr<Impl> impl_;
