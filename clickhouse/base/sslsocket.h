@@ -9,9 +9,12 @@ namespace clickhouse {
 
 struct SSLContextParams
 {
-    std::vector<std::string> path_to_cert_files;
-    std::string path_to_cert_directory;
-    bool use_default_CA_locations;
+    std::vector<std::string> path_to_ca_files;
+    std::string path_to_ca_directory;
+    bool use_default_ca_locations;
+    int context_options;
+    int min_protocol_version;
+    int max_protocol_version;
 };
 
 class SSLContext
@@ -31,7 +34,6 @@ private:
     SSL_CTX * getContext();
 
 private:
-    const bool owned;
     SSL_CTX * const context_;
 };
 

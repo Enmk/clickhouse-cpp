@@ -100,23 +100,42 @@ struct ClientOptions {
         /// If set to true, client will initiate secure connection to the server using OpenSSL.
         bool secure_connection = false;
 
-        /** Means to validate server-supplied certificate agains trust certificate store.
-         *  If no CA are loaded the server's identity can't be validated and client would err.
-         *  Another option is to-preconfigure SSL_CTX and pass it as `ssl_context`.
-        */
-        /// path to the directory with .pem files used to validate server certificate, may be empty.
-        std::string path_to_cert_directory;
-        /// path to the .pem files to verify server certificate, may be empty.
-        std::vector<std::string> path_to_cert_files;
-        bool use_default_CA_locations = true;
+        /** There are two ways to confiure SSL connection:
+         *  - provide a pre-configured SSL_CTX, which is not modified and not owned by the client.
+         *  - provide set of options and allow Client to create and configure SSL_CTX by itself.
+         */
 
-        /** Pre-configured SSL-context to use for making SSL-connection.
+        /** Pre-configured SSL-context for SSL-connection.
          *  If NOT null client DONES NOT take ownership of context and it must be valid for client lifetime.
-         *  If null client initlaizes OpenSSL and creates his own context, initializing it accorind with
-         * other provided options, like path_to_cert_file, path_to_cert_directory, etc.
+         *  If null client initlaizes OpenSSL and creates his own context, initializes it using
+         *  other options, like path_to_ca_files, path_to_ca_directory, use_default_ca_locations, etc.
          */
         SSL_CTX * ssl_context = nullptr;
-        // TODO: min TLS version
+
+        /** Means to validate server-supplied certificate agains trusted Certificate Authority (CA).
+         *  If no CA are configured the server's identity can't be validated and client would err.
+         *  See https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_default_verify_paths.html
+        */
+        /// Load deafult CA certificates from deafult locations.
+        bool use_default_ca_locations = true;
+        /// Path to the CA files to verify server certificate, may be empty.
+        std::vector<std::string> path_to_ca_files = {};
+        /// Path to the directory with CA files used to validate server certificate, may be empty.
+        std::string path_to_ca_directory = "";
+
+        /** Options to change with SSL_CTX_set_options,
+         * for details see https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_options.html
+        */
+        int context_options = DEFAULT_VALUE;
+
+        /** Min and max protocol versions to use, set with SSL_CTX_set_min_proto_version and SSL_CTX_set_max_proto_version
+         *  for details see https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_min_proto_version.html
+         */
+        int min_protocol_version = DEFAULT_VALUE;
+        int max_protocol_version = DEFAULT_VALUE;
+
+        /// Deafult safe value for any of the options above, exact value is secure enough and
+        static const int DEFAULT_VALUE = -1;
     };
     DECLARE_FIELD(ssl_options, SSLOptions, SetSSLOptions, {});
 #endif

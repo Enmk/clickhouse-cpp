@@ -298,9 +298,12 @@ void Client::Impl::ResetConnection() {
             ssl_context = std::make_unique<SSLContext>(*ssl_options.ssl_context);
         else
             ssl_context = std::make_unique<SSLContext>(SSLContextParams{
-                    ssl_options.path_to_cert_files,
-                    ssl_options.path_to_cert_directory,
-                    ssl_options.use_default_CA_locations
+                    ssl_options.path_to_ca_files,
+                    ssl_options.path_to_ca_directory,
+                    ssl_options.use_default_ca_locations,
+                    ssl_options.context_options,
+                    ssl_options.min_protocol_version,
+                    ssl_options.max_protocol_version,
             });
 
         socket = std::make_unique<SSLSocket>(address, *ssl_context);

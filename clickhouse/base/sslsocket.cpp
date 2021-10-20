@@ -5,20 +5,28 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-#include <iostream>
+//#include <iostream>
 
 namespace {
 
-void throwSSLError(int error, const char * location, const char * statement) {
-    auto reason = ERR_reason_error_string(error);
-    reason = reason ? reason : "Unknown SSL error";
+void throwSSLError(int error, const char * /*location*/, const char * /*statement*/) {
+    char buffer[256] = {'\0'};
+    const auto detail_error = ERR_get_error();
+    ERR_error_string_n(detail_error, buffer, sizeof(buffer));
+    auto reason = buffer; //reason ? reason : "Unknown SSL error";
 
-    std::cerr << "!!! SSL error at " << location
-              << "\n\tcaused by " << statement
-              << "\n\t: "<< reason << "(" << error << ")" << std::endl;
+//    std::cerr << "!!! SSL error at " << location
+//              << "\n\tcaused by " << statement
+//              << "\n\t: "<< reason << "(" << error << ")"
+//              << "\n\t last err: " << ERR_peek_last_error()
+//              << std::endl;
 
     throw std::runtime_error(std::string("OpenSSL error: ") + std::to_string(error) + " : " + reason);
 }
+
+#define STRINGIFY_HELPER(x) #x
+#define STRINGIFY(x) STRINGIFY_HELPER(x)
+#define LOCATION __FILE__  ":" STRINGIFY(__LINE__)
 
 struct SSLInitializer {
     SSLInitializer() {
@@ -37,27 +45,33 @@ SSL_CTX * prepareSSLContext(const clickhouse::SSLContextParams & context_params)
     if (!ctx)
         throw std::runtime_error("Failed to initialize SSL context");
 
-#define STRINGIFY_HELPER(x) #x
-#define STRINGIFY(x) STRINGIFY_HELPER(x)
-#define LOCATION __FILE__  ":" STRINGIFY(__LINE__)
-
 #define HANDLE_SSL_CTX_ERROR(statement) do { \
-    if (const auto ret_code = statement; ret_code) \
-        throwSSLError(ERR_get_error(), LOCATION, STRINGIFY(statement)); \
+    if (const auto ret_code = statement; !ret_code) \
+        throwSSLError(ERR_peek_error(), LOCATION, STRINGIFY(statement)); \
 } while(false);
 
-    if (context_params.use_default_CA_locations)
+    if (context_params.use_default_ca_locations)
         HANDLE_SSL_CTX_ERROR(SSL_CTX_set_default_verify_paths(ctx.get()));
-    if (!context_params.path_to_cert_directory.empty())
-        HANDLE_SSL_CTX_ERROR(SSL_CTX_load_verify_locations(
+    if (!context_params.path_to_ca_directory.empty())
+        HANDLE_SSL_CTX_ERROR(
+            SSL_CTX_load_verify_locations(
                 ctx.get(),
                 nullptr,
-                context_params.path_to_cert_directory.c_str())
+                context_params.path_to_ca_directory.c_str())
         );
-    for (const auto & f : context_params.path_to_cert_files)
+    for (const auto & f : context_params.path_to_ca_files)
     {
         HANDLE_SSL_CTX_ERROR(SSL_CTX_load_verify_locations(ctx.get(), f.c_str(), nullptr));
     }
+
+    if (context_params.context_options != -1)
+        SSL_CTX_set_options(ctx.get(), context_params.context_options);
+    if (context_params.min_protocol_version != -1)
+        HANDLE_SSL_CTX_ERROR(
+            SSL_CTX_set_min_proto_version(ctx.get(), context_params.min_protocol_version));
+    if (context_params.max_protocol_version != -1)
+        HANDLE_SSL_CTX_ERROR(
+            SSL_CTX_set_max_proto_version(ctx.get(), context_params.max_protocol_version));
 
     return ctx.release();
 }
@@ -67,35 +81,35 @@ SSL_CTX * prepareSSLContext(const clickhouse::SSLContextParams & context_params)
 }
 
 #define HANDLE_SSL_ERROR(statement) do { \
-    if (const auto ret_code = statement; ret_code) \
+    if (const auto ret_code = statement; ret_code <= 0) \
         throwSSLError(SSL_get_error(ssl_, ret_code), LOCATION, STRINGIFY(statement)); \
 } while(false);
 
 namespace clickhouse {
 
 SSLContext::SSLContext(SSL_CTX & context)
-    : owned(false),
-      context_(&context)
+    : context_(&context)
 {
+    SSL_CTX_up_ref(context_);
 }
 
 SSLContext::SSLContext(const SSLContextParams & context_params)
-    : owned(true),
-      context_(prepareSSLContext(context_params))
+    : context_(prepareSSLContext(context_params))
 {
 }
 
 SSLContext::~SSLContext() {
-    if (owned)
-        SSL_CTX_free(context_);
+    SSL_CTX_free(context_);
 }
 
 SSL_CTX * SSLContext::getContext() {
     return context_;
 }
-#define LOG_SSL_STATE() std::cerr << "!!!!" << LOCATION << " @" << __FUNCTION__ \
-    << " state "  << SSL_state_string_long(ssl_) << std::endl
 
+//#define LOG_SSL_STATE() std::cerr << "!!!!" << LOCATION << " @" << __FUNCTION__ \
+//    << "\t" << SSL_get_version(ssl_) << " state: "  << SSL_state_string_long(ssl_) \
+//    << "\n\t handshake state: " << SSL_get_state(ssl_) \
+//    << std::endl
 SSLSocket::SSLSocket(const NetworkAddress& addr, SSLContext& context)
     : Socket(addr),
     ssl_(SSL_new(context.getContext()))
@@ -104,24 +118,21 @@ SSLSocket::SSLSocket(const NetworkAddress& addr, SSLContext& context)
     if (!ssl_)
         throw std::runtime_error("Failed to create SSL instance");
 
-    LOG_SSL_STATE();
     HANDLE_SSL_ERROR(SSL_set_fd(ssl_, handle_));
+    SSL_set_connect_state(ssl_);
     HANDLE_SSL_ERROR(SSL_connect(ssl_));
-    LOG_SSL_STATE();
     HANDLE_SSL_ERROR(SSL_set_mode(ssl_, SSL_MODE_AUTO_RETRY));
-    LOG_SSL_STATE();
 
     if(const auto verify_result = SSL_get_verify_result(ssl_); verify_result != X509_V_OK) {
         throw std::runtime_error("Failed to verify SSL connection, X509_v error: " + std::to_string(verify_result));
     }
-    auto ssl_session = SSL_get_session(ssl_);
-    LOG_SSL_STATE();
 
-    if (ssl_session)
-    {
-        auto protocol_version = SSL_SESSION_get_protocol_version(ssl_session);
-        std::cerr << "SSL protocol version: " << protocol_version << std::endl;
-    }
+//    auto ssl_session = SSL_get_session(ssl_);
+//    if (ssl_session)
+//    {
+//        auto protocol_version = SSL_SESSION_get_protocol_version(ssl_session);
+//        std::cerr << "SSL protocol version: " << protocol_version << std::endl;
+//    }
 }
 
 SSLSocket::~SSLSocket() {
@@ -144,9 +155,7 @@ SSLSocketInput::~SSLSocketInput() = default;
 
 size_t SSLSocketInput::DoRead(void* buf, size_t len) {
     size_t actually_read;
-    LOG_SSL_STATE();
     HANDLE_SSL_ERROR(SSL_read_ex(ssl_, buf, len, &actually_read));
-    LOG_SSL_STATE();
     return actually_read;
 }
 
@@ -157,9 +166,7 @@ SSLSocketOutput::SSLSocketOutput(SSL *ssl)
 SSLSocketOutput::~SSLSocketOutput() = default;
 
 void SSLSocketOutput::DoWrite(const void* data, size_t len) {
-    LOG_SSL_STATE();
     HANDLE_SSL_ERROR(SSL_write(ssl_, data, len));
-    LOG_SSL_STATE();
 }
 
 }

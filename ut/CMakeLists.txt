@@ -18,3 +18,7 @@ TARGET_LINK_LIBRARIES (clickhouse-cpp-ut
     clickhouse-cpp-lib
     gtest-lib
 )
+
+if (WITH_OPENSSL)
+    target_link_libraries(clickhouse-cpp-ut ${OPENSSL_LIBRARIES})
+endif()

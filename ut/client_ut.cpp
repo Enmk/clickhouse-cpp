@@ -888,3 +888,30 @@ INSTANTIATE_TEST_CASE_P(
             .SetPingBeforeQuery(false)
             .SetCompressionMethod(CompressionMethod::LZ4)
     ));
+
+#if WITH_OPENSSL
+INSTANTIATE_TEST_CASE_P(
+    RemoteTLS, ClientCase,
+    ::testing::Values(
+        ClientOptions()
+            .SetHost("github.demo.trial.altinity.cloud")
+            .SetPort(8443)
+            .SetUser("demo")
+            .SetPassword("demo")
+            .SetPingBeforeQuery(true)
+            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, true})
+            .SetCompressionMethod(CompressionMethod::None)
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    LocalhostTLS, ClientCase,
+    ::testing::Values(
+        ClientOptions()
+            .SetHost("127.0.0.1")
+            .SetPort(9440)
+            .SetUser("default")
+            .SetPingBeforeQuery(true)
+            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, false, {}, "/home/enmk/work/altinity/CA/"})
+            .SetCompressionMethod(CompressionMethod::None)
+    ));
+#endif
