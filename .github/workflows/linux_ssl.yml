@@ -1,0 +1,9 @@
+name: Linux With OpenSSL
+
+# Almost the same as regular Linux builds, BUT with enabled SSL support, requires OpenSSL installed
+jobs:
+  build-and-test:
+    uses: octo-org/this-repo/.github/workflows/workflow-1.yml@172239021f7ba04fe7327647b213799853a9eb89
+    with:
+      extra_cmake_flags: -DWITH_OPENSSL=ON
+      extra_install: libssl1.1 libssl-dev
