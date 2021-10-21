@@ -1,6 +1,12 @@
-name: Linux With OpenSSL
-
+name: Linux-ssl
 # Almost the same as regular Linux builds, BUT with enabled SSL support, requires OpenSSL installed
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
 jobs:
   build-and-test:
     uses: octo-org/this-repo/.github/workflows/workflow-1.yml@172239021f7ba04fe7327647b213799853a9eb89
