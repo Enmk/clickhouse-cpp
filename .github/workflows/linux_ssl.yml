@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-test:
-    uses: octo-org/this-repo/.github/workflows/workflow-1.yml@172239021f7ba04fe7327647b213799853a9eb89
+    uses: ./.github/workflows/linux.yml
     with:
       extra_cmake_flags: -DWITH_OPENSSL=ON
       extra_install: libssl1.1 libssl-dev
