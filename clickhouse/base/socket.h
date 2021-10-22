@@ -40,8 +40,10 @@ public:
     ~NetworkAddress();
 
     const struct addrinfo* Info() const;
+    const std::string & Host() const;
 
 private:
+    const std::string host_;
     struct addrinfo* info_;
 };
 

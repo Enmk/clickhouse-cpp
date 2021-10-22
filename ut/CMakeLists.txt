@@ -20,5 +20,5 @@ TARGET_LINK_LIBRARIES (clickhouse-cpp-ut
 )
 
 if (WITH_OPENSSL)
-    target_link_libraries(clickhouse-cpp-ut ${OPENSSL_LIBRARIES})
+    target_link_libraries(clickhouse-cpp-ut OpenSSL::SSL)
 endif()

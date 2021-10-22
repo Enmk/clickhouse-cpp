@@ -106,6 +106,6 @@ INSTALL(FILES types/type_parser.h DESTINATION include/clickhouse/types/)
 INSTALL(FILES types/types.h DESTINATION include/clickhouse/types/)
 
 if (WITH_OPENSSL)
-    target_link_libraries(clickhouse-cpp-lib ${OPENSSL_LIBRARIES})
-    target_link_libraries(clickhouse-cpp-lib-static ${OPENSSL_LIBRARIES})
+    target_link_libraries(clickhouse-cpp-lib OpenSSL::SSL)
+    target_link_libraries(clickhouse-cpp-lib-static OpenSSL::SSL)
 endif()

@@ -123,16 +123,16 @@ struct ClientOptions {
         /// Path to the directory with CA files used to validate server certificate, may be empty.
         std::string path_to_ca_directory = "";
 
-        /** Options to change with SSL_CTX_set_options,
-         * for details see https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_options.html
-        */
-        int context_options = DEFAULT_VALUE;
-
         /** Min and max protocol versions to use, set with SSL_CTX_set_min_proto_version and SSL_CTX_set_max_proto_version
          *  for details see https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_min_proto_version.html
          */
         int min_protocol_version = DEFAULT_VALUE;
         int max_protocol_version = DEFAULT_VALUE;
+
+        /** Options to be set with SSL_CTX_set_options,
+         * for details see https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_options.html
+        */
+        int context_options = DEFAULT_VALUE;
 
         /// Deafult safe value for any of the options above, exact value is secure enough and
         static const int DEFAULT_VALUE = -1;

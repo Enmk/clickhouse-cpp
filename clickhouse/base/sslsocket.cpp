@@ -3,25 +3,38 @@
 #include <stdexcept>
 
 #include <openssl/ssl.h>
+#include <openssl/x509.h>
 #include <openssl/err.h>
 
-//#include <iostream>
+#include <iostream>
 
 namespace {
 
-void throwSSLError(int error, const char * /*location*/, const char * /*statement*/) {
-    char buffer[256] = {'\0'};
+void throwSSLError(int error, const char * location, const char * statement) {
+//    char buffer[256] = {'\0'};
     const auto detail_error = ERR_get_error();
-    ERR_error_string_n(detail_error, buffer, sizeof(buffer));
-    auto reason = buffer; //reason ? reason : "Unknown SSL error";
+//    ERR_error_string_n(detail_error, buffer, sizeof(buffer));
+    auto reason = ERR_reason_error_string(detail_error);
+    reason = reason ? reason : "Unknown SSL error";
 
-//    std::cerr << "!!! SSL error at " << location
-//              << "\n\tcaused by " << statement
-//              << "\n\t: "<< reason << "(" << error << ")"
-//              << "\n\t last err: " << ERR_peek_last_error()
-//              << std::endl;
+    std::cerr << "!!! SSL error at " << location
+              << "\n\tcaused by " << statement
+              << "\n\t: "<< reason << "(" << error << ")"
+              << "\n\t last err: " << ERR_peek_last_error()
+              << std::endl;
 
     throw std::runtime_error(std::string("OpenSSL error: ") + std::to_string(error) + " : " + reason);
+}
+
+std::string getCertificateInfo(X509* cert)
+{
+
+    std::unique_ptr<BIO, decltype(&BIO_free)> mem_bio(BIO_new(BIO_s_mem()), &BIO_free);
+    X509_print(mem_bio.get(), cert);
+    char * data = nullptr;
+    size_t len = BIO_get_mem_data(mem_bio.get(), &data);
+
+    return std::string(data, len);
 }
 
 #define STRINGIFY_HELPER(x) #x
@@ -114,18 +127,32 @@ SSLSocket::SSLSocket(const NetworkAddress& addr, SSLContext& context)
     : Socket(addr),
     ssl_(SSL_new(context.getContext()))
 {
-
     if (!ssl_)
         throw std::runtime_error("Failed to create SSL instance");
 
     HANDLE_SSL_ERROR(SSL_set_fd(ssl_, handle_));
+    SSL_set_tlsext_host_name(ssl_, addr.Host().c_str());
     SSL_set_connect_state(ssl_);
     HANDLE_SSL_ERROR(SSL_connect(ssl_));
     HANDLE_SSL_ERROR(SSL_set_mode(ssl_, SSL_MODE_AUTO_RETRY));
 
     if(const auto verify_result = SSL_get_verify_result(ssl_); verify_result != X509_V_OK) {
-        throw std::runtime_error("Failed to verify SSL connection, X509_v error: " + std::to_string(verify_result));
+        auto error_message = X509_verify_cert_error_string(verify_result);
+
+        auto cert = SSL_get_certificate(ssl_);
+        if (!cert)
+            cert = SSL_CTX_get0_certificate(context.getContext());
+
+        std::cerr << "Certificate validation error" << std::to_string(verify_result) << " " << error_message;
+        if (cert)
+            std::cerr << "Certifiate info: " << getCertificateInfo(SSL_get_certificate(ssl_));
+        std::cerr << std::endl;
+
+        throw std::runtime_error("Failed to verify SSL connection, X509_v error: " + std::to_string(verify_result) + " " + error_message);
     }
+    // TODO: verify that server certificate matches addr.Host()
+
+    //X509_check_host
 
 //    auto ssl_session = SSL_get_session(ssl_);
 //    if (ssl_session)
