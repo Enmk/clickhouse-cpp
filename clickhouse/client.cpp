@@ -309,19 +309,23 @@ void Client::Impl::ResetConnection() {
     // TODO: maybe do not re-create context multiple times upon reconnection - that doesn't make sense.
     std::unique_ptr<SSLContext> ssl_context;
     if (const auto & ssl_options = options_.ssl_options; ssl_options.secure_connection) {
+        const auto ssl_params = SSLParams {
+                ssl_options.path_to_ca_files,
+                ssl_options.path_to_ca_directory,
+                ssl_options.use_default_ca_locations,
+                ssl_options.context_options,
+                ssl_options.min_protocol_version,
+                ssl_options.max_protocol_version,
+                ssl_options.use_SNI
+        };
+
         if (ssl_options.ssl_context)
             ssl_context = std::make_unique<SSLContext>(*ssl_options.ssl_context);
-        else
-            ssl_context = std::make_unique<SSLContext>(SSLContextParams{
-                    ssl_options.path_to_ca_files,
-                    ssl_options.path_to_ca_directory,
-                    ssl_options.use_default_ca_locations,
-                    ssl_options.context_options,
-                    ssl_options.min_protocol_version,
-                    ssl_options.max_protocol_version,
-            });
+        else {
+            ssl_context = std::make_unique<SSLContext>(ssl_params);
+        }
 
-        socket = std::make_unique<SSLSocket>(address, *ssl_context);
+        socket = std::make_unique<SSLSocket>(address, ssl_params, *ssl_context);
     }
     else
 #endif

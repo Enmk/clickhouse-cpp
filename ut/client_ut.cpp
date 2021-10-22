@@ -1043,7 +1043,7 @@ INSTANTIATE_TEST_CASE_P(
             .SetPort(9440)
             .SetUser("default")
             .SetPingBeforeQuery(true)
-            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, false, {}, "/home/enmk/work/altinity/CA/"})
+            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, false, {}, "/home/enmk/work/altinity/CA/", TLS1_2_VERSION, TLS1_3_VERSION, -1, true})
             .SetCompressionMethod(CompressionMethod::None),
         QUERIES
     }
@@ -1057,7 +1057,7 @@ INSTANTIATE_TEST_CASE_P(
             .SetPort(9440)
             .SetUser("default")
             .SetPingBeforeQuery(true)
-            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, false, {}, "/home/enmk/work/altinity/CA/", TLS1_2_VERSION, TLS1_3_VERSION})
+            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, false, {}, "/home/enmk/work/altinity/CA/", TLS1_2_VERSION, TLS1_3_VERSION, -1, false})
             .SetCompressionMethod(CompressionMethod::LZ4),
         QUERIES
     }

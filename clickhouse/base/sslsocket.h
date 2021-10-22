@@ -7,7 +7,7 @@ typedef struct ssl_st SSL;
 
 namespace clickhouse {
 
-struct SSLContextParams
+struct SSLParams
 {
     std::vector<std::string> path_to_ca_files;
     std::string path_to_ca_directory;
@@ -15,13 +15,14 @@ struct SSLContextParams
     int context_options;
     int min_protocol_version;
     int max_protocol_version;
+    bool use_SNI;
 };
 
 class SSLContext
 {
 public:
     explicit SSLContext(SSL_CTX & context);
-    explicit SSLContext(const SSLContextParams & context_params);
+    explicit SSLContext(const SSLParams & context_params);
     ~SSLContext();
 
     SSLContext(const SSLContext &) = delete;
@@ -39,7 +40,7 @@ private:
 
 class SSLSocket : public Socket {
 public:
-    explicit SSLSocket(const NetworkAddress& addr, SSLContext& context);
+    explicit SSLSocket(const NetworkAddress& addr, const SSLParams & ssl_params, SSLContext& context);
     SSLSocket(SSLSocket &&) = default;
     ~SSLSocket();
 

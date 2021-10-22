@@ -44,6 +44,12 @@ enum class CompressionMethod {
 };
 
 struct ClientOptions {
+    ClientOptions() = default;
+    ClientOptions(const ClientOptions &) = default;
+    ClientOptions& operator=(const ClientOptions &) = default;
+    ClientOptions(ClientOptions &&) = default;
+    ClientOptions& operator=(ClientOptions &&) = default;
+
 #define DECLARE_FIELD(name, type, setter, default_value) \
     type name = default_value; \
     inline ClientOptions& setter(const type& value) { \
@@ -133,6 +139,10 @@ struct ClientOptions {
          * for details see https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_options.html
         */
         int context_options = DEFAULT_VALUE;
+
+        /** Use SNI at ClientHello and verify that certificate is issued to the hostname we are trying to connect to
+         */
+        bool use_SNI = true;
 
         /// Deafult safe value for any of the options above, exact value is secure enough and
         static const int DEFAULT_VALUE = -1;
