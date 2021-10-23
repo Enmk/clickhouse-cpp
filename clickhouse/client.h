@@ -44,15 +44,9 @@ enum class CompressionMethod {
 };
 
 struct ClientOptions {
-    ClientOptions() = default;
-    ClientOptions(const ClientOptions &) = default;
-    ClientOptions& operator=(const ClientOptions &) = default;
-    ClientOptions(ClientOptions &&) = default;
-    ClientOptions& operator=(ClientOptions &&) = default;
-
 #define DECLARE_FIELD(name, type, setter, default_value) \
     type name = default_value; \
-    inline ClientOptions& setter(const type& value) { \
+    inline auto & setter(const type& value) { \
         name = value; \
         return *this; \
     }
@@ -103,12 +97,11 @@ struct ClientOptions {
 
 #if WITH_OPENSSL
     struct SSLOptions {
-        /// If set to true, client will initiate secure connection to the server using OpenSSL.
-        bool secure_connection = false;
+        bool use_ssl = true; // not expected to be set manually.
 
-        /** There are two ways to confiure SSL connection:
-         *  - provide a pre-configured SSL_CTX, which is not modified and not owned by the client.
-         *  - provide set of options and allow Client to create and configure SSL_CTX by itself.
+        /** There are two ways to configure an SSL connection:
+         *  - provide a pre-configured SSL_CTX, which is not modified and not owned by the Client.
+         *  - provide a set of options and allow the Client to create and configure SSL_CTX by itself.
          */
 
         /** Pre-configured SSL-context for SSL-connection.
@@ -117,37 +110,42 @@ struct ClientOptions {
          *  other options, like path_to_ca_files, path_to_ca_directory, use_default_ca_locations, etc.
          */
         SSL_CTX * ssl_context = nullptr;
+        auto & UseExternalSSLContext(SSL_CTX * new_ssl_context) {
+            ssl_context = new_ssl_context;
+            return *this;
+        }
 
-        /** Means to validate server-supplied certificate agains trusted Certificate Authority (CA).
-         *  If no CA are configured the server's identity can't be validated and client would err.
+        /** Means to validate the server-supplied certificate against trusted Certificate Authority (CA).
+         *  If no CAs are configured, the server's identity can't be validated, and the Client would err.
          *  See https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_default_verify_paths.html
         */
         /// Load deafult CA certificates from deafult locations.
-        bool use_default_ca_locations = true;
+        DECLARE_FIELD(use_default_ca_locations, bool, UseDefaultCaLocations, true);
         /// Path to the CA files to verify server certificate, may be empty.
-        std::vector<std::string> path_to_ca_files = {};
+        DECLARE_FIELD(path_to_ca_files, std::vector<std::string>, PathToCAFiles, {});
         /// Path to the directory with CA files used to validate server certificate, may be empty.
-        std::string path_to_ca_directory = "";
+        DECLARE_FIELD(path_to_ca_directory, std::string, PathToCADirectory, "");
 
         /** Min and max protocol versions to use, set with SSL_CTX_set_min_proto_version and SSL_CTX_set_max_proto_version
          *  for details see https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_min_proto_version.html
          */
-        int min_protocol_version = DEFAULT_VALUE;
-        int max_protocol_version = DEFAULT_VALUE;
+        DECLARE_FIELD(min_protocol_version, int, MinProtocolVersion, DEFAULT_VALUE);
+        DECLARE_FIELD(max_protocol_version, int, MaxProtocolVersion, DEFAULT_VALUE);
 
         /** Options to be set with SSL_CTX_set_options,
          * for details see https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_set_options.html
         */
-        int context_options = DEFAULT_VALUE;
+        DECLARE_FIELD(context_options, int, ContextOptions, DEFAULT_VALUE);
 
         /** Use SNI at ClientHello and verify that certificate is issued to the hostname we are trying to connect to
          */
-        bool use_SNI = true;
+        DECLARE_FIELD(use_sni, bool, UseSNI, true);
 
-        /// Deafult safe value for any of the options above, exact value is secure enough and
         static const int DEFAULT_VALUE = -1;
     };
-    DECLARE_FIELD(ssl_options, SSLOptions, SetSSLOptions, {});
+
+    // By default SSL is turned off.
+    DECLARE_FIELD(ssl_options, SSLOptions, SetSSLOptions, {false});
 #endif
 
 #undef DECLARE_FIELD

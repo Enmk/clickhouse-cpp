@@ -67,19 +67,19 @@ std::ostream& operator<<(std::ostream& os, const ClientOptions& opt) {
        << " compression_method:"
        << (opt.compression_method == CompressionMethod::LZ4 ? "LZ4" : "None");
 #if WITH_OPENSSL
-    const auto & ssl_options = opt.ssl_options;
-    os << " SSL ( secure_connection:" << ssl_options.secure_connection;
-    if (ssl_options.secure_connection) {
-        os << " ssl_context: " << (ssl_options.ssl_context ? "provided by user" : "created internally")
+    if (opt.ssl_options.use_ssl) {
+        const auto & ssl_options = opt.ssl_options;
+        os << " SSL ("
+           << " ssl_context: " << (ssl_options.ssl_context ? "provided by user" : "created internally")
            << " use_default_ca_locations: " << ssl_options.use_default_ca_locations
            << " use_default_ca_locations: " << ssl_options.use_default_ca_locations
            << " path_to_ca_files: " << ssl_options.path_to_ca_files.size() << " items"
            << " path_to_ca_directory: " << ssl_options.path_to_ca_directory
            << " min_protocol_version: " << ssl_options.min_protocol_version
            << " min_protocol_version: " << ssl_options.max_protocol_version
-           << " context_options: " << ssl_options.context_options;
+           << " context_options: " << ssl_options.context_options
+           << ")";
     }
-    os << ")";
 #endif
     os << ")";
     return os;
@@ -308,7 +308,8 @@ void Client::Impl::ResetConnection() {
 #if WITH_OPENSSL
     // TODO: maybe do not re-create context multiple times upon reconnection - that doesn't make sense.
     std::unique_ptr<SSLContext> ssl_context;
-    if (const auto & ssl_options = options_.ssl_options; ssl_options.secure_connection) {
+    if (options_.ssl_options.use_ssl) {
+        const auto ssl_options = options_.ssl_options;
         const auto ssl_params = SSLParams {
                 ssl_options.path_to_ca_files,
                 ssl_options.path_to_ca_directory,
@@ -316,7 +317,7 @@ void Client::Impl::ResetConnection() {
                 ssl_options.context_options,
                 ssl_options.min_protocol_version,
                 ssl_options.max_protocol_version,
-                ssl_options.use_SNI
+                ssl_options.use_sni
         };
 
         if (ssl_options.ssl_context)

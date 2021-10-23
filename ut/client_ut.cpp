@@ -1029,8 +1029,9 @@ INSTANTIATE_TEST_CASE_P(
             .SetSendRetries(1)
             .SetPingBeforeQuery(true)
             // On Ubuntu 20.04 /etc/ssl/certs is a default directory with the CA files
-            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, true, {}, "/etc/ssl/certs", TLS1_3_VERSION, TLS1_3_VERSION})
-            .SetCompressionMethod(CompressionMethod::None),
+            .SetCompressionMethod(CompressionMethod::None)
+            .SetSSLOptions(ClientOptions::SSLOptions()
+                    .PathToCADirectory("/etc/ssl/certs")),
         QUERIES
     }
 ));
@@ -1043,8 +1044,10 @@ INSTANTIATE_TEST_CASE_P(
             .SetPort(9440)
             .SetUser("default")
             .SetPingBeforeQuery(true)
-            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, false, {}, "/home/enmk/work/altinity/CA/", TLS1_2_VERSION, TLS1_3_VERSION, -1, true})
-            .SetCompressionMethod(CompressionMethod::None),
+            .SetCompressionMethod(CompressionMethod::None)
+            .SetSSLOptions(ClientOptions::SSLOptions()
+                    .PathToCADirectory("./CA/")
+                    .UseSNI(false)),
         QUERIES
     }
 ));
@@ -1057,8 +1060,10 @@ INSTANTIATE_TEST_CASE_P(
             .SetPort(9440)
             .SetUser("default")
             .SetPingBeforeQuery(true)
-            .SetSSLOptions(ClientOptions::SSLOptions{true, nullptr, false, {}, "/home/enmk/work/altinity/CA/", TLS1_2_VERSION, TLS1_3_VERSION, -1, false})
-            .SetCompressionMethod(CompressionMethod::LZ4),
+            .SetCompressionMethod(CompressionMethod::LZ4)
+            .SetSSLOptions(ClientOptions::SSLOptions()
+                    .PathToCADirectory("./CA/")
+                    .UseSNI(false)),
         QUERIES
     }
 ));
