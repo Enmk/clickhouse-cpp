@@ -9,7 +9,19 @@ on:
 
 jobs:
   build-and-test:
-    uses: Enmk/clickhouse-cpp/.github/workflows/linux.yml@master
-    with:
-      extra_cmake_flags: -DWITH_OPENSSL=ON
-      extra_install: libssl1.1 libssl-dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: prepare CA and certificates
+        run: |
+           mkdir -p /etc/clickhouse-server/
+           cp ${{github.workspace}}/.github/workspace/SSL/{server,dhparam}.* /etc/clickhouse-server/
+           mkdir -p ${{github.workspace}}/build/ut/CA
+           cp ${{github.workspace}}/.github/workspace/SSL/my-own-ca.* ${{github.workspace}}/build/ut/CA
+           c_rehash ${{github.workspace}}/build/ut/CA
+      - name: build and test
+        uses: Enmk/clickhouse-cpp/.github/workflows/linux.yml@master
+        with:
+          extra_cmake_flags: -DWITH_OPENSSL=ON
+          extra_install: libssl1.1 libssl-dev
+         
+       
