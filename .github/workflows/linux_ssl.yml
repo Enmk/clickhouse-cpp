@@ -23,5 +23,3 @@ jobs:
         with:
           extra_cmake_flags: -DWITH_OPENSSL=ON
           extra_install: libssl1.1 libssl-dev
-         
-       
