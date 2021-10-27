@@ -72,7 +72,7 @@ public:
     ~SSLSocketOutput();
 
 protected:
-    void DoWrite(const void* data, size_t len) override;
+    size_t DoWrite(const void* data, size_t len) override;
 
 private:
     SSL *ssl_;

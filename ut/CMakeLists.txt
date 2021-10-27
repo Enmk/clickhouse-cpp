@@ -8,10 +8,12 @@ ADD_EXECUTABLE (clickhouse-cpp-ut
     stream_ut.cpp
     type_parser_ut.cpp
     types_ut.cpp
+    output_ut.cpp
 
     performance_tests.cpp
     tcp_server.cpp
     utils.cpp
+    memory_usage.cpp
 )
 
 TARGET_LINK_LIBRARIES (clickhouse-cpp-ut

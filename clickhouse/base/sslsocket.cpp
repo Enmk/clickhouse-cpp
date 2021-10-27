@@ -97,10 +97,14 @@ SSL_CTX * prepareSSLContext(const clickhouse::SSLParams & context_params) {
 
 }
 
-#define HANDLE_SSL_ERROR(statement) do { \
-    if (const auto ret_code = statement; ret_code <= 0) \
+#define HANDLE_SSL_ERROR(statement) [&] { \
+    if (const auto ret_code = statement; ret_code <= 0) { \
         throwSSLError(ssl_, SSL_get_error(ssl_, ret_code), LOCATION, STRINGIFY(statement)); \
-} while(false);
+        return static_cast<decltype(ret_code)>(0); \
+    } \
+    else \
+        return ret_code; \
+}()
 
 namespace clickhouse {
 
@@ -204,8 +208,8 @@ SSLSocketOutput::SSLSocketOutput(SSL *ssl)
 
 SSLSocketOutput::~SSLSocketOutput() = default;
 
-void SSLSocketOutput::DoWrite(const void* data, size_t len) {
-    HANDLE_SSL_ERROR(SSL_write(ssl_, data, len));
+size_t SSLSocketOutput::DoWrite(const void* data, size_t len) {
+    return static_cast<size_t>(HANDLE_SSL_ERROR(SSL_write(ssl_, data, len)));
 }
 
 }

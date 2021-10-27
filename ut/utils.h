@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <ratio>
+#include <vector>
 #include <ostream>
 
 #include <time.h>
@@ -67,4 +68,34 @@ template <typename R, typename P>
 ostream & operator<<(ostream & ostr, const chrono::duration<R, P> & d) {
     return ostr << d.count() << ::getPrefix<P>() << "s";
 }
+}
+
+template <typename MeasureFunc>
+class MeasuresCollector {
+public:
+    using Result = std::result_of_t<MeasureFunc()>;
+    explicit MeasuresCollector(MeasureFunc && measurment_func, const size_t preallocate_results = 10)
+        : measurment_func_(std::move(measurment_func))
+    {
+        results_.reserve(preallocate_results);
+    }
+
+    template <typename NameType>
+    void Add(NameType && name) {
+        results_.emplace_back(name, measurment_func_());
+    }
+
+    const auto & GetResults() const {
+        return results_;
+    }
+
+private:
+    MeasureFunc measurment_func_;
+    std::vector<std::pair<std::string, Result>> results_;
+};
+
+template <typename MeasureFunc>
+MeasuresCollector<MeasureFunc> collect(MeasureFunc && f)
+{
+    return MeasuresCollector<MeasureFunc>(std::forward<MeasureFunc>(f));
 }
