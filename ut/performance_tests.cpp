@@ -13,8 +13,6 @@
 #include <string>
 
 #include "utils.h"
-#include "memory_usage.h"
-
 
 using namespace clickhouse;
 
@@ -90,13 +88,7 @@ TYPED_TEST_CASE_P(ColumnPerformanceTest);
 #endif
 
 TYPED_TEST_P(ColumnPerformanceTest, SaveAndLoad) {
-//    SKIP_IN_DEBUG_BUILDS();
-
-    auto rss_collector = collect([]() {
-        return std::make_tuple(getCurrentRSS(), getPeakRSS());
-    });
-
-    rss_collector.Add("initial");
+    SKIP_IN_DEBUG_BUILDS();
 
     auto column = InstantiateColumn<TypeParam>();
     using Timer = Timer<std::chrono::microseconds>;
@@ -127,8 +119,6 @@ TYPED_TEST_P(ColumnPerformanceTest, SaveAndLoad) {
         std::cerr << "Accessing (twice):\t" << elapsed << std::endl;
     }
 
-    rss_collector.Add("after prepare");
-
     Buffer buffer;
 
     // Save
@@ -149,8 +139,6 @@ TYPED_TEST_P(ColumnPerformanceTest, SaveAndLoad) {
         std::cerr << "Saving:\t" << elapsed << std::endl;
     }
 
-    rss_collector.Add("after save");
-
     std::cerr << "Serialized binary size: " << buffer.size() << std::endl;
 
     // Load
@@ -169,14 +157,6 @@ TYPED_TEST_P(ColumnPerformanceTest, SaveAndLoad) {
 
         std::cerr << "Loading:\t" << elapsed << std::endl;
     }
-
-    rss_collector.Add("after load");
-
-    std::cerr << "RSS" << std::endl;
-    for (const auto & r : rss_collector.GetResults())
-        std::cerr << "\t" << std::setw(20) << r.first
-                  << "\tvalue : " << std::setw(10) << std::get<0>(r.second)
-                  << "\tpeak: " << std::setw(10) << std::get<1>(r.second) << std::endl;
 
     EXPECT_NO_FATAL_FAILURE(ValidateColumnItems(column, ITEMS_COUNT));
 }

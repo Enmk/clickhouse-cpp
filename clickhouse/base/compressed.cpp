@@ -110,13 +110,7 @@ CompressedOutput::CompressedOutput(OutputStream * destination, size_t max_compre
 }
 
 CompressedOutput::~CompressedOutput() {
-    try {
         Flush();
-    } catch (const std::exception & e) {
-        std::cerr << "Unexpected exception while Flush()-ing: " << e.what() << std::endl;
-    } catch (...) {
-            std::cerr << "UNKNOWN Unexpected exception while Flush()-ing" << std::endl;
-    }
 }
 
 size_t CompressedOutput::DoWrite(const void* data, size_t len) {
