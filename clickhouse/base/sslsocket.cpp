@@ -196,6 +196,10 @@ SSLSocketInput::SSLSocketInput(SSL *ssl)
 
 SSLSocketInput::~SSLSocketInput() = default;
 
+bool SSLSocketInput::Skip(size_t /*bytes*/) {
+    return false;
+}
+
 size_t SSLSocketInput::DoRead(void* buf, size_t len) {
     size_t actually_read;
     HANDLE_SSL_ERROR(SSL_read_ex(ssl_, buf, len, &actually_read));

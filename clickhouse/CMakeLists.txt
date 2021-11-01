@@ -1,5 +1,4 @@
 SET ( clickhouse-cpp-lib-src
-    base/coded.cpp
     base/compressed.cpp
     base/input.cpp
     base/output.cpp
@@ -73,7 +72,6 @@ INSTALL(FILES query.h DESTINATION include/clickhouse/)
 
 # base
 INSTALL(FILES base/buffer.h DESTINATION include/clickhouse/base/)
-INSTALL(FILES base/coded.h DESTINATION include/clickhouse/base/)
 INSTALL(FILES base/compressed.h DESTINATION include/clickhouse/base/)
 INSTALL(FILES base/input.h DESTINATION include/clickhouse/base/)
 INSTALL(FILES base/output.h DESTINATION include/clickhouse/base/)

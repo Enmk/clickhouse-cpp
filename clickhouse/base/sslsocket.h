@@ -59,6 +59,8 @@ public:
     explicit SSLSocketInput(SSL *ssl);
     ~SSLSocketInput();
 
+    bool Skip(size_t bytes) override;
+
 protected:
     size_t DoRead(void* buf, size_t len) override;
 
