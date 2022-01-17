@@ -11,6 +11,7 @@ namespace {
     using namespace clickhouse;
 }
 
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(ConnectionFailedClientTest);
 TEST_P(ConnectionFailedClientTest, ValidateConnectionError) {
 
     const auto & client_options = std::get<0>(GetParam());
