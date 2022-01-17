@@ -36,6 +36,9 @@ jobs:
           INSTALL: gcc-9 g++-9
           C_COMPILER: gcc-9
           CXX_COMPILER: g++-9
+        
+        - ssl: ssl_ON
+          INSTALL: ${{ matrix.INSTALL }} libssl-dev
 
     steps:
     - uses: actions/checkout@v2
@@ -43,11 +46,6 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y cmake ${{ matrix.INSTALL }}
-        if [[ ${{ matrix.ssl }} = 'ssl_ON' ]]
-        then
-          echo "Installing SSL headers and other stuff"
-          sudo apt-get install -y libssl-dev
-        fi
 
     - name: Configure CMake
       run: |
@@ -57,7 +55,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.CXX_COMPILER}} \
           -B ${{github.workspace}}/build \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON \
-          -DWITH_OPENSSL=${{matrix.ssl}} \
+          -DWITH_OPENSSL=${${{matrix.ssl }}/"#ssl_"/} \
           ${{ matrix.extra_cmake_flags }}
 
     - name: Build
