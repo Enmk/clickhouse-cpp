@@ -38,7 +38,7 @@ jobs:
           CXX_COMPILER: g++-9
         
         - ssl: ssl_ON
-          INSTALL: libssl-dev
+          INSTALL: $INSTALL libssl-dev
 
     steps:
     - uses: actions/checkout@v2
