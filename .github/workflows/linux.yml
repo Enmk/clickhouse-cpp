@@ -54,8 +54,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.CXX_COMPILER}} \
           -B ${{github.workspace}}/build \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON \
-          -DWITH_OPENSSL=${${{matrix.ssl }}/"#ssl_"/} \
-          ${{ matrix.extra_cmake_flags }}
+          -DWITH_OPENSSL=$(echo ${{ matrix.ssl}} | cut -c 5-)
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target all
