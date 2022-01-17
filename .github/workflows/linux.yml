@@ -38,14 +38,13 @@ jobs:
           CXX_COMPILER: g++-9
         
         - ssl: ssl_ON
-          INSTALL: $INSTALL libssl-dev
+          INSTALL_SSL: libssl-dev
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
-      run: |
-        sudo apt-get install -y cmake ${{ matrix.INSTALL }}
+      run: sudo apt-get install -y cmake ${{ matrix.INSTALL }} ${{ matrix.INSTALL_SSL }}
 
     - name: Configure CMake
       run: |
