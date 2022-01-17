@@ -43,7 +43,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y cmake ${{ matrix.INSTALL }}
-        if [[ '${{ matrix.ssl }}' = 'ssl_ON' ]]
+        if [[ ${{ matrix.ssl }} = 'ssl_ON' ]]
         then
           echo "Installing SSL headers and other stuff"
           sudo apt-get install -y libssl-dev
