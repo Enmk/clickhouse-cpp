@@ -25,8 +25,8 @@ jobs:
         ssl: [ssl_ON, ssl_OFF]
         dependencies: [dependencies_BUILT_IN]
 
-        include:      
-        - compiler: clang-10
+        include:
+        - compiler: clang-11
           os: ubuntu-22.04
           COMPILER_INSTALL: clang-11 libc++-11-dev
           C_COMPILER: clang-11
